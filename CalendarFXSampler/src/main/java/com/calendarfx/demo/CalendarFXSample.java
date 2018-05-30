@@ -23,9 +23,12 @@ import fxsampler.SampleBase;
 import impl.com.calendarfx.view.CalendarPropertySheet;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.scenicview.ScenicView;
 
 import static java.util.Objects.requireNonNull;
 
@@ -71,7 +74,10 @@ public abstract class CalendarFXSample extends SampleBase {
     @Override
     public Node getControlPanel() {
         if (control instanceof CalendarFXControl) {
-            return new CalendarPropertySheet(((CalendarFXControl) control).getPropertySheetItems());
+            Button btn = new Button("scenicView");
+            btn.setOnAction(evt -> ScenicView.show(control.getScene()));
+
+            return new VBox(new CalendarPropertySheet(((CalendarFXControl) control).getPropertySheetItems()), btn);
         }
         return null;
     }

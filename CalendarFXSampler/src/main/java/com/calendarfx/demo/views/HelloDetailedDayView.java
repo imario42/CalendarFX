@@ -82,7 +82,7 @@ public class HelloDetailedDayView extends CalendarFXDateControlSample {
         public HelloCalendar() {
             LocalDate date = LocalDate.now();
 
-            for (int i = 1; i < 3; i++) {
+            for (int i = 1; i < 6; i++) {
 
                 Entry<?> entry = new Entry<>();
                 entry.changeStartDate(date);
@@ -100,9 +100,9 @@ public class HelloDetailedDayView extends CalendarFXDateControlSample {
                 entry.changeStartTime(startTime);
                 entry.changeEndTime(endTime);
 
-                if (Math.random() < .1) {
+                if (i % 2 == 0) {
                     entry.setFullDay(true);
-                    entry.setTitle("Full Day Entry");
+                    entry.setTitle("Full Day Entry " + i);
                 }
 
                 entry.setCalendar(this);

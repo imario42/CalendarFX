@@ -47,9 +47,10 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
     private final Label allDayLabel;
     private final DayViewScrollPane timeScaleScrollPane;
     private final DayViewScrollPane dayViewScrollPane;
+    private final AllDayViewScrollPane allDayViewScrollPane;
     private final Separator separator;
-    private final AllDayView allDayView;
-    private final ScrollBar scrollBar;
+    private final ScrollBar allDayScrollBar;
+    private final ScrollBar dayTimeScrollBar;
     private final CalendarHeaderView calendarHeaderView;
     private final Region allDayFiller;
     private final AgendaView agendaView;
@@ -62,11 +63,13 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
     public DetailedDayViewSkin(DetailedDayView view) {
         super(view);
 
-        scrollBar = new ScrollBar();
+        dayTimeScrollBar = new ScrollBar();
+        allDayScrollBar = new ScrollBar();
+        allDayScrollBar.setMinSize(0.0, 0.0);
 
         // the day view (scroll pane)
         DayView dayView = view.getDayView();
-        dayViewScrollPane = new DayViewScrollPane(dayView, scrollBar);
+        dayViewScrollPane = new DayViewScrollPane(dayView, dayTimeScrollBar);
         dayViewScrollPane.getStyleClass().addAll("calendar-scroll-pane", "day-view-scroll-pane"); //$NON-NLS-1$
 
         // the time scale
@@ -74,9 +77,14 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         Bindings.bindBidirectional(timeScale.translateYProperty(), dayView.translateYProperty());
 
         // the all-day view
-        allDayView = view.getAllDayView();
+        AllDayView allDayView = view.getAllDayView();
         allDayView.setShowToday(false);
         allDayView.setAdjustToFirstDayOfWeek(false);
+        allDayViewScrollPane = new AllDayViewScrollPane(allDayView, allDayScrollBar);
+        view.allDayScrollHeightProperty().addListener(il -> allDayScrollBar.setPrefHeight(Math.min(allDayViewScrollPane.getViewportHeight(), view.getAllDayScrollHeight())));
+
+
+        allDayViewScrollPane.allDayScrollHeightProperty().bind(view.allDayScrollHeightProperty());
 
         // all day label
         allDayLabel = new Label(Messages.getString("DetailedDayViewSkin.ALL_DAY")); //$NON-NLS-1$
@@ -89,7 +97,7 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         allDayFiller.getStyleClass().add("header-all-day-filler");
 
         // time scale scroll pane
-        timeScaleScrollPane = new DayViewScrollPane(timeScale, scrollBar);
+        timeScaleScrollPane = new DayViewScrollPane(timeScale, dayTimeScrollBar);
         timeScaleScrollPane.getStyleClass().addAll("calendar-scroll-pane", "day-view-timescale-scroll-pane"); //$NON-NLS-1$
 
         // separator
@@ -101,6 +109,8 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         view.layoutProperty().addListener(visibilityListener);
         view.showAgendaViewProperty().addListener(visibilityListener);
         view.showScrollBarProperty().addListener(visibilityListener);
+        view.showAllDayScrollBarProperty().addListener(visibilityListener);
+        allDayScrollBar.prefHeightProperty().addListener(visibilityListener);
 
         calendarHeaderView = view.getCalendarHeaderView();
         calendarHeaderView.visibleProperty().bind(view.layoutProperty().isEqualTo(DateControl.Layout.SWIMLANE));
@@ -183,8 +193,12 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         }
 
         if (view.isShowAllDayView()) {
-            gridPane.add(allDayView, 1, 0);
-            gridPane.add(allDayFiller, 2, 0);
+            gridPane.add(allDayViewScrollPane, 1, 0);
+            if (view.isShowAllDayScrollBar()) {
+                gridPane.add(allDayScrollBar, 2, 0);
+            } else {
+                gridPane.add(allDayFiller, 2, 0);
+            }
         }
 
         if (view.getLayout().equals(DateControl.Layout.SWIMLANE)) {
@@ -194,7 +208,7 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         gridPane.add(dayViewScrollPane, 1, 2);
 
         if (view.isShowScrollBar()) {
-            gridPane.add(scrollBar, 2, 2);
+            gridPane.add(dayTimeScrollBar, 2, 2);
         }
 
         if (view.isShowAgendaView()) {

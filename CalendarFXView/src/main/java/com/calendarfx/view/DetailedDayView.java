@@ -19,7 +19,9 @@ package com.calendarfx.view;
 import com.calendarfx.view.AgendaView.AgendaEntryCell;
 import impl.com.calendarfx.view.DetailedDayViewSkin;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Skin;
@@ -211,6 +213,64 @@ public class DetailedDayView extends DayViewBase {
         showTimeScaleViewProperty().set(show);
     }
 
+    // show scrollbar for all-day region support
+
+    private final BooleanProperty showAllDayScrollBar = new SimpleBooleanProperty(this, "showAllDayScrollBar", false);
+
+    /**
+     * A property used to control the visibility of the vertial scrollbar in the "all day" region.
+     */
+    public final BooleanProperty showAllDayScrollBarProperty() {
+        return showAllDayScrollBar;
+    }
+
+    /**
+     * Sets the value of {@link #showAllDayScrollBarProperty()}.
+     *
+     * @param showAllDayScrollBar if true the scrollbar will be visible
+     */
+    public final void setShowAllDayScrollBar(boolean showAllDayScrollBar) {
+        this.showAllDayScrollBar.set(showAllDayScrollBar);
+    }
+
+    /**
+     * Returns the value of {@link #showAllDayScrollBarProperty()}.
+     *
+     * @return true if the scrollbar will be visible
+     */
+    public final boolean isShowAllDayScrollBar() {
+        return showAllDayScrollBar.get();
+    }
+
+    // height of all-day region if scrollbar is enabled
+
+    private final DoubleProperty allDayScrollHeight = new SimpleDoubleProperty(this, "allDayScrollHeight", 100.0);
+
+    /**
+     * A property used to control the height of the "all day" region when scrolling is enabled
+     */
+    public final DoubleProperty allDayScrollHeightProperty() {
+        return allDayScrollHeight;
+    }
+
+    /**
+     * Sets the value of {@link #allDayScrollHeightProperty()}.
+     *
+     * @param allDayScrollHeight the height of the "all day" region when scrolling is enabled
+     */
+    public final void setAllDayScrollHeight(Double allDayScrollHeight) {
+        this.allDayScrollHeight.set(allDayScrollHeight);
+    }
+
+    /**
+     * Returns the value of {@link #allDayScrollHeightProperty()}.
+     *
+     * @return the height of the "all day" region when scrolling is enabled
+     */
+    public final Double getAllDayScrollHeight() {
+        return allDayScrollHeight.get();
+    }
+
     // show scrollbar support
 
     private final BooleanProperty showScrollBar = new SimpleBooleanProperty(this, "showScrollBar", true);
@@ -356,6 +416,80 @@ public class DetailedDayView extends DayViewBase {
             @Override
             public String getCategory() {
                 return DETAILED_DAY_VIEW_CATEGORY;
+            }
+        });
+
+        items.add(new Item() {
+            @Override
+            public Class<?> getType() {
+                return Boolean.class;
+            }
+
+            @Override
+            public String getCategory() {
+                return DETAILED_DAY_VIEW_CATEGORY;
+            }
+
+            @Override
+            public String getName() {
+                return "Show AllDay ScrollBar";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Show AllDay ScrollBar";
+            }
+
+            @Override
+            public Object getValue() {
+                return isShowAllDayScrollBar();
+            }
+
+            @Override
+            public void setValue(Object value) {
+                setShowAllDayScrollBar((boolean) value);
+            }
+
+            @Override
+            public Optional<ObservableValue<?>> getObservableValue() {
+                return Optional.of(showAllDayScrollBarProperty());
+            }
+        });
+
+        items.add(new Item() {
+            @Override
+            public Class<?> getType() {
+                return Double.class;
+            }
+
+            @Override
+            public String getCategory() {
+                return DETAILED_DAY_VIEW_CATEGORY;
+            }
+
+            @Override
+            public String getName() {
+                return "AllDay Scroll Height";
+            }
+
+            @Override
+            public String getDescription() {
+                return "AllDay Scroll Height";
+            }
+
+            @Override
+            public Object getValue() {
+                return getAllDayScrollHeight();
+            }
+
+            @Override
+            public void setValue(Object value) {
+                setAllDayScrollHeight((Double) value);
+            }
+
+            @Override
+            public Optional<ObservableValue<?>> getObservableValue() {
+                return Optional.of(allDayScrollHeightProperty());
             }
         });
 
