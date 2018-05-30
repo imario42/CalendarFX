@@ -29,13 +29,22 @@ import com.calendarfx.view.EntryViewBase;
 import impl.com.calendarfx.view.util.Placement;
 import impl.com.calendarfx.view.util.Resolver;
 import javafx.beans.InvalidationListener;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.DoubleProperty;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Control;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Rectangle;
 import javafx.util.Callback;
 
 import java.time.LocalDate;
@@ -56,17 +65,46 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
     private static final String ALL_DAY_BACKGROUND_REGION_TODAY = "today"; //$NON-NLS-1$
     private static final String ALL_DAY_BACKGROUND_REGION_WEEKEND = "weekend"; //$NON-NLS-1$
 
+    private static final String PROPERTY_INDICATOR = "calendarfx_indicator";
+
+    private final AllDayView view;
+
     private DataLoader dataLoader;
-    private GridPane pane;
+
+    private StackPane stackPane;
+    private Pane scrollPane;
+    private Pane elementsPane;
+    private List<Region> indicators = new ArrayList<>();
+    private GridPane gridPane;
+    private ScrollBar allDayScrollBar;
 
     public AllDayViewSkin(AllDayView view) {
         super(view);
+        this.view = view;
 
         view.setFocusTraversable(true);
 
-        pane = new GridPane();
-        pane.getStyleClass().add("container");
-        getChildren().add(pane);
+        gridPane = new GridPane();
+        gridPane.getStyleClass().add("container");
+
+        stackPane = new StackPane();
+        stackPane.getStyleClass().add("all-day-view");
+
+        elementsPane = new Pane();
+        elementsPane.getStyleClass().add("all-day-view");
+        elementsPane.setMinSize(Control.USE_PREF_SIZE, Control.USE_PREF_SIZE);
+        elementsPane.setPrefSize(Control.USE_COMPUTED_SIZE, Control.USE_COMPUTED_SIZE);
+        elementsPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+        scrollPane = new Pane();
+        scrollPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        scrollPane.getChildren().add(elementsPane);
+
+        StackPane.setAlignment(scrollPane, Pos.TOP_LEFT);
+
+        stackPane.getChildren().addAll(gridPane, scrollPane);
+
+        getChildren().add(stackPane);
 
         // update backgrounds
         InvalidationListener updateBackgroundsListener = evt -> updateBackgrounds();
@@ -101,7 +139,7 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
     private void updateEntries(String reason) {
         LoggingDomain.PERFORMANCE.fine("updating entries, reason: " + reason);
 
-        getChildren().removeIf(child -> child instanceof AllDayEntryView);
+        elementsPane.getChildren().removeIf(child -> child instanceof AllDayEntryView);
 
         Map<LocalDate, List<Entry<?>>> dataMap = new HashMap<>();
         dataLoader.loadEntries(dataMap);
@@ -123,7 +161,7 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
     }
 
     private boolean removeEntryView(Entry<?> entry) {
-        boolean removed = getChildren().removeIf(node -> {
+        boolean removed = elementsPane.getChildren().removeIf(node -> {
             if (node instanceof AllDayEntryView) {
                 AllDayEntryView view = (AllDayEntryView) node;
 
@@ -176,7 +214,7 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
 
         int index = findIndex(entry);
 
-        getChildren().add(index, view);
+        elementsPane.getChildren().add(index, view);
 
         if (!(entry instanceof DraggedEntry) && LoggingDomain.VIEW.isLoggable(Level.FINE)) {
             LoggingDomain.VIEW.fine("added entry view " + entry.getTitle() + ", day = " + getSkinnable().getDate());
@@ -190,10 +228,10 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
      * view. The right order is important for TAB traversal to work properly.
      */
     private int findIndex(Entry<?> entry) {
-        int childrenSize = getChildren().size();
+        int childrenSize = elementsPane.getChildren().size();
 
         for (int i = 0; i < childrenSize; i++) {
-            Node node = getChildren().get(i);
+            Node node = elementsPane.getChildren().get(i);
             if (node instanceof AllDayEntryView) {
                 AllDayEntryView view = (AllDayEntryView) node;
                 Entry<?> viewEntry = view.getEntry();
@@ -301,7 +339,7 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
     @Override
     protected double computePrefHeight(double width, double topInset, double rightInset, double bottomInset, double leftInset) {
 
-        List<AllDayEntryView> entryViews = getChildren().stream().filter(node -> node instanceof AllDayEntryView).map(node -> (AllDayEntryView) node).collect(Collectors.toList());
+        List<AllDayEntryView> entryViews = elementsPane.getChildren().stream().filter(node -> node instanceof AllDayEntryView).map(node -> (AllDayEntryView) node).collect(Collectors.toList());
 
         List<Placement> placements = Resolver.resolve(entryViews);
 
@@ -339,7 +377,7 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
 
         Insets extraPadding = getSkinnable().getExtraPadding();
 
-        List<AllDayEntryView> entryViews = getChildren().stream().filter(node -> node instanceof AllDayEntryView).map(node -> (AllDayEntryView) node).collect(Collectors.toList());
+        List<AllDayEntryView> entryViews = elementsPane.getChildren().stream().filter(node -> node instanceof AllDayEntryView).map(node -> (AllDayEntryView) node).collect(Collectors.toList());
 
         List<Placement> placements = Resolver.resolve(entryViews);
 
@@ -394,12 +432,21 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
 
             height = Math.max(height, y + rowHeight);
         }
+
+        elementsPane.setMaxHeight(height);
+        double prefHeight = computePrefHeight(0,0, 0, 0, 0);
+        System.err.println("resize: " + prefHeight);
+        elementsPane.resize(view.getWidth(), prefHeight);
+        elementsPane.setPrefHeight(prefHeight);
     }
 
     private void updateBackgrounds() {
         // the day views
 
-        pane.getChildren().clear();
+        stackPane.getChildren().removeAll(indicators);
+        indicators.clear();
+
+        gridPane.getChildren().clear();
         List<ColumnConstraints> constraints = new ArrayList<>();
 
         int numberOfDays = getSkinnable().getNumberOfDays();
@@ -419,16 +466,34 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
             getSkinnable().dateProperty().addListener(evt -> updateRegion(region, day));
             updateRegion(region, day);
 
-            pane.add(region, i, 0);
+            gridPane.add(region, i, 0);
+
+            Region indicator = new Region();
+            indicator.getStyleClass().add(ALL_DAY_BACKGROUND_REGION);
+            indicator.setManaged(true);
+            indicator.setMouseTransparent(true);
+            indicator.setFocusTraversable(false);
+            region.boundsInParentProperty().addListener((observable, oldValue, newValue) -> {
+                indicator.resizeRelocate(
+                        newValue.getMinX(),
+                        newValue.getMinY(),
+                        newValue.getWidth(),
+                        ((Region) gridPane.getParent()).getHeight());
+            });
+            indicators.add(indicator);
+
+            region.getProperties().put(PROPERTY_INDICATOR, indicator);
         }
 
-        pane.getColumnConstraints().setAll(constraints);
+        gridPane.getColumnConstraints().setAll(constraints);
+        stackPane.getChildren().addAll(indicators);
 
         getSkinnable().requestLayout();
     }
 
     private void updateRegion(Region region, int day) {
         final AllDayView view = getSkinnable();
+        final Region indicator = (Region) region.getProperties().get(PROPERTY_INDICATOR);
 
         LocalDate startDate = view.getDate();
 
@@ -441,17 +506,29 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
         if (view.isShowToday() && date.equals(view.getToday())) {
             if (!region.getStyleClass().contains(ALL_DAY_BACKGROUND_REGION_TODAY)) {
                 region.getStyleClass().add(ALL_DAY_BACKGROUND_REGION_TODAY);
+                if (indicator != null) {
+                    indicator.getStyleClass().add(ALL_DAY_BACKGROUND_REGION_TODAY);
+                }
             }
         } else {
             region.getStyleClass().remove(ALL_DAY_BACKGROUND_REGION_TODAY);
+            if (indicator != null) {
+                indicator.getStyleClass().remove(ALL_DAY_BACKGROUND_REGION_TODAY);
+            }
         }
 
         if (view.getWeekendDays().contains(date.getDayOfWeek())) {
             if (!region.getStyleClass().contains(ALL_DAY_BACKGROUND_REGION_WEEKEND)) {
                 region.getStyleClass().add(ALL_DAY_BACKGROUND_REGION_WEEKEND);
+                if (indicator != null) {
+                    indicator.getStyleClass().add(ALL_DAY_BACKGROUND_REGION_WEEKEND);
+                }
             }
         } else {
             region.getStyleClass().remove(ALL_DAY_BACKGROUND_REGION_WEEKEND);
+            if (indicator != null) {
+                indicator.getStyleClass().remove(ALL_DAY_BACKGROUND_REGION_WEEKEND);
+            }
         }
     }
 
@@ -504,5 +581,52 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
     @Override
     public boolean isCalendarVisible(Calendar calendar) {
         return getSkinnable().isCalendarVisible(calendar);
+    }
+
+    protected void setupScrollBar(ScrollBar allDayScrollBar, DoubleProperty maxHeight) {
+        this.allDayScrollBar = allDayScrollBar;
+
+        this.allDayScrollBar.setOrientation(Orientation.VERTICAL);
+
+        final double borderHeight = 5.0;
+
+        final InvalidationListener scroller = (observable) -> elementsPane.setTranslateY(allDayScrollBar.getValue() * -1);
+
+        this.allDayScrollBar.parentProperty().addListener((observable, oldParent, newParent) -> {
+            if (newParent != null) {
+                view.maxHeightProperty().bind(maxHeight);
+
+                allDayScrollBar.prefHeightProperty().bind(Bindings
+                        .when(Bindings.greaterThan(elementsPane.heightProperty(), view.heightProperty())).then(view.heightProperty()).otherwise(elementsPane.heightProperty()));
+
+                allDayScrollBar.maxProperty().bind(elementsPane.heightProperty().subtract(allDayScrollBar.heightProperty()));
+
+                allDayScrollBar.valueProperty().addListener(scroller);
+
+                Rectangle clipView = new Rectangle();
+                clipView.widthProperty().bind(stackPane.widthProperty());
+                clipView.heightProperty().bind(view.maxHeightProperty());
+                view.setClip(clipView);
+
+                Rectangle clipElements = new Rectangle();
+                clipElements.widthProperty().bind(stackPane.widthProperty());
+                clipElements.heightProperty().bind(view.maxHeightProperty().subtract(borderHeight));
+                scrollPane.setClip(clipElements);
+
+                this.allDayScrollBar.requestLayout();
+            } else {
+                allDayScrollBar.prefHeightProperty().unbind();
+                allDayScrollBar.maxProperty().unbind();
+                allDayScrollBar.visibleAmountProperty().unbind();
+                allDayScrollBar.valueProperty().removeListener(scroller);
+                this.allDayScrollBar.setValue(0.0);
+                view.maxHeightProperty().unbind();
+                view.setMaxHeight(Double.MAX_VALUE);
+                scrollPane.setClip(null);
+                view.setClip(null);
+
+                this.allDayScrollBar.requestLayout();
+            }
+        });
     }
 }

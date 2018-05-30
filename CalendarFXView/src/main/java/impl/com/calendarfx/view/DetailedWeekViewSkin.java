@@ -27,6 +27,7 @@ import com.calendarfx.view.WeekView;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.binding.Bindings;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ScrollBar;
@@ -43,7 +44,8 @@ public class DetailedWeekViewSkin extends DateControlSkin<DetailedWeekView> {
     private final Label allDayLabel;
     private final DayViewScrollPane weekViewScrollPane;
     private final DayViewScrollPane timeScaleScrollPane;
-    private final AllDayViewScrollPane allDayViewScrollPane;
+    // private final AllDayViewScrollPane allDayViewScrollPane;
+    private final AllDayView allDayView;
     private final GridPane weekViewContainer;
     private final CalendarHeaderView calendarHeaderView;
     private final WeekDayHeaderView weekdayHeaderView;
@@ -60,11 +62,18 @@ public class DetailedWeekViewSkin extends DateControlSkin<DetailedWeekView> {
 
         allDayScrollBar = new ScrollBar();
         allDayScrollBar.setMinSize(0.0, 0.0);
+        allDayScrollBar.setMaxHeight(Double.MAX_VALUE);
 
-        AllDayView allDayView = view.getAllDayView();
-        allDayViewScrollPane = new AllDayViewScrollPane(allDayView, allDayScrollBar);
-        view.allDayScrollHeightProperty().addListener(il -> allDayScrollBar.setPrefHeight(Math.min(allDayViewScrollPane.getViewportHeight(), view.getAllDayScrollHeight())));
-        allDayViewScrollPane.allDayScrollHeightProperty().bind(view.allDayScrollHeightProperty());
+        allDayView = view.getAllDayView();
+        allDayView.skinProperty().addListener((observable, oldValue, newValue) -> {
+            ((AllDayViewSkin) newValue).setupScrollBar(allDayScrollBar, view.allDayScrollHeightProperty());
+        });
+        allDayView.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        GridPane.setFillHeight(allDayView, Boolean.TRUE);
+        GridPane.setFillWidth(allDayView, Boolean.TRUE);
+        // allDayViewScrollPane = new AllDayViewScrollPane(allDayView, allDayScrollBar);
+        // view.allDayScrollHeightProperty().addListener(il -> allDayScrollBar.setPrefHeight(Math.min(allDayViewScrollPane.getViewportHeight(), view.getAllDayScrollHeight())));
+        // allDayViewScrollPane.allDayScrollHeightProperty().bind(view.allDayScrollHeightProperty());
 
         calendarHeaderView = view.getCalendarHeaderView();
         dayTimeScrollBar = new ScrollBar();
@@ -178,7 +187,8 @@ public class DetailedWeekViewSkin extends DateControlSkin<DetailedWeekView> {
         }
 
         if (view.isShowAllDayView()) {
-            weekViewContainer.add(allDayViewScrollPane, 1, 1);
+            // weekViewContainer.add(allDayViewScrollPane, 1, 1);
+            weekViewContainer.add(allDayView, 1, 1);
             if (view.isShowAllDayScrollBar()) {
                 weekViewContainer.add(allDayScrollBar, 2, 1);
             } else {

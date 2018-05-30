@@ -29,6 +29,7 @@ import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Orientation;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ScrollBar;
@@ -47,7 +48,8 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
     private final Label allDayLabel;
     private final DayViewScrollPane timeScaleScrollPane;
     private final DayViewScrollPane dayViewScrollPane;
-    private final AllDayViewScrollPane allDayViewScrollPane;
+    // private final AllDayViewScrollPane allDayViewScrollPane;
+    private final AllDayView allDayView;
     private final Separator separator;
     private final ScrollBar allDayScrollBar;
     private final ScrollBar dayTimeScrollBar;
@@ -66,6 +68,7 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         dayTimeScrollBar = new ScrollBar();
         allDayScrollBar = new ScrollBar();
         allDayScrollBar.setMinSize(0.0, 0.0);
+        allDayScrollBar.setMaxHeight(Double.MAX_VALUE);
 
         // the day view (scroll pane)
         DayView dayView = view.getDayView();
@@ -77,12 +80,18 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         Bindings.bindBidirectional(timeScale.translateYProperty(), dayView.translateYProperty());
 
         // the all-day view
-        AllDayView allDayView = view.getAllDayView();
+        allDayView = view.getAllDayView();
+        allDayView.skinProperty().addListener((observable, oldValue, newValue) -> {
+            ((AllDayViewSkin) newValue).setupScrollBar(allDayScrollBar, view.allDayScrollHeightProperty());
+        });
         allDayView.setShowToday(false);
         allDayView.setAdjustToFirstDayOfWeek(false);
-        allDayViewScrollPane = new AllDayViewScrollPane(allDayView, allDayScrollBar);
-        view.allDayScrollHeightProperty().addListener(il -> allDayScrollBar.setPrefHeight(Math.min(allDayViewScrollPane.getViewportHeight(), view.getAllDayScrollHeight())));
-        allDayViewScrollPane.allDayScrollHeightProperty().bind(view.allDayScrollHeightProperty());
+        // allDayViewScrollPane = new AllDayViewScrollPane(allDayView, allDayScrollBar);
+        // view.allDayScrollHeightProperty().addListener(il -> allDayScrollBar.setPrefHeight(Math.min(allDayViewScrollPane.getViewportHeight(), view.getAllDayScrollHeight())));
+        // allDayViewScrollPane.allDayScrollHeightProperty().bind(view.allDayScrollHeightProperty());
+        allDayView.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        GridPane.setFillHeight(allDayView, Boolean.TRUE);
+        GridPane.setFillWidth(allDayView, Boolean.TRUE);
 
         // all day label
         allDayLabel = new Label(Messages.getString("DetailedDayViewSkin.ALL_DAY")); //$NON-NLS-1$
@@ -108,7 +117,6 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         view.showAgendaViewProperty().addListener(visibilityListener);
         view.showScrollBarProperty().addListener(visibilityListener);
         view.showAllDayScrollBarProperty().addListener(visibilityListener);
-        allDayScrollBar.prefHeightProperty().addListener(visibilityListener);
 
         calendarHeaderView = view.getCalendarHeaderView();
         calendarHeaderView.visibleProperty().bind(view.layoutProperty().isEqualTo(DateControl.Layout.SWIMLANE));
@@ -191,7 +199,8 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         }
 
         if (view.isShowAllDayView()) {
-            gridPane.add(allDayViewScrollPane, 1, 0);
+            // gridPane.add(allDayViewScrollPane, 1, 0);
+            gridPane.add(allDayView, 1, 0);
             if (view.isShowAllDayScrollBar()) {
                 gridPane.add(allDayScrollBar, 2, 0);
             } else {
