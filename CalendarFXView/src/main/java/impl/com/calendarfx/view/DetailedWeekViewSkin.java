@@ -43,11 +43,12 @@ public class DetailedWeekViewSkin extends DateControlSkin<DetailedWeekView> {
     private final Label allDayLabel;
     private final DayViewScrollPane weekViewScrollPane;
     private final DayViewScrollPane timeScaleScrollPane;
+    private final AllDayViewScrollPane allDayViewScrollPane;
     private final GridPane weekViewContainer;
-    private final AllDayView allDayView;
     private final CalendarHeaderView calendarHeaderView;
     private final WeekDayHeaderView weekdayHeaderView;
-    private final ScrollBar scrollBar;
+    private final ScrollBar allDayScrollBar;
+    private final ScrollBar dayTimeScrollBar;
     private final Region weekdayFillerLeft;
     private final Region weekdayFillerRight;
     private final Region allDayFiller;
@@ -56,11 +57,19 @@ public class DetailedWeekViewSkin extends DateControlSkin<DetailedWeekView> {
         super(view);
 
         WeekView weekView = view.getWeekView();
-        allDayView = view.getAllDayView();
-        calendarHeaderView = view.getCalendarHeaderView();
-        scrollBar = new ScrollBar();
 
-        weekViewScrollPane = new DayViewScrollPane(weekView, scrollBar);
+        allDayScrollBar = new ScrollBar();
+        allDayScrollBar.setMinSize(0.0, 0.0);
+
+        AllDayView allDayView = view.getAllDayView();
+        allDayViewScrollPane = new AllDayViewScrollPane(allDayView, allDayScrollBar);
+        view.allDayScrollHeightProperty().addListener(il -> allDayScrollBar.setPrefHeight(Math.min(allDayViewScrollPane.getViewportHeight(), view.getAllDayScrollHeight())));
+        allDayViewScrollPane.allDayScrollHeightProperty().bind(view.allDayScrollHeightProperty());
+
+        calendarHeaderView = view.getCalendarHeaderView();
+        dayTimeScrollBar = new ScrollBar();
+
+        weekViewScrollPane = new DayViewScrollPane(weekView, dayTimeScrollBar);
         weekViewScrollPane.getStyleClass().add("week-view-scroll-pane");
 
         allDayLabel = new Label(Messages.getString("DetailedWeekViewSkin.ALL_DAY")); //$NON-NLS-1$
@@ -80,7 +89,7 @@ public class DetailedWeekViewSkin extends DateControlSkin<DetailedWeekView> {
         WeekTimeScaleView timeScale = view.getTimeScaleView();
         timeScale.getProperties().put("week.view", view); //$NON-NLS-1$
 
-        timeScaleScrollPane = new DayViewScrollPane(timeScale, scrollBar);
+        timeScaleScrollPane = new DayViewScrollPane(timeScale, dayTimeScrollBar);
         timeScaleScrollPane.getStyleClass().addAll("timescale-scroll-pane"); //$NON-NLS-1$
 
         // synchronous scrolling
@@ -137,6 +146,8 @@ public class DetailedWeekViewSkin extends DateControlSkin<DetailedWeekView> {
         view.showAllDayViewProperty().addListener(visibilityListener);
         view.layoutProperty().addListener(visibilityListener);
         view.showScrollBarProperty().addListener(visibilityListener);
+        view.showAllDayScrollBarProperty().addListener(visibilityListener);
+        allDayScrollBar.prefHeightProperty().addListener(visibilityListener);
 
         /*
          * Run later when the control has become visible.
@@ -167,8 +178,12 @@ public class DetailedWeekViewSkin extends DateControlSkin<DetailedWeekView> {
         }
 
         if (view.isShowAllDayView()) {
-            weekViewContainer.add(allDayView, 1, 1);
-            weekViewContainer.add(allDayFiller, 2, 1);
+            weekViewContainer.add(allDayViewScrollPane, 1, 1);
+            if (view.isShowAllDayScrollBar()) {
+                weekViewContainer.add(allDayScrollBar, 2, 1);
+            } else {
+                weekViewContainer.add(allDayFiller, 2, 1);
+            }
         }
 
         if (view.getLayout().equals(DateControl.Layout.SWIMLANE)) {
@@ -178,7 +193,7 @@ public class DetailedWeekViewSkin extends DateControlSkin<DetailedWeekView> {
         weekViewContainer.add(weekViewScrollPane, 1, 3);
 
         if (view.isShowScrollBar()) {
-            weekViewContainer.add(scrollBar, 2, 3);
+            weekViewContainer.add(dayTimeScrollBar, 2, 3);
         }
     }
 }

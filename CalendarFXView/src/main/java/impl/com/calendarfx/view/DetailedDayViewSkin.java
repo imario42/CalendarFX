@@ -82,8 +82,6 @@ public class DetailedDayViewSkin extends DateControlSkin<DetailedDayView> {
         allDayView.setAdjustToFirstDayOfWeek(false);
         allDayViewScrollPane = new AllDayViewScrollPane(allDayView, allDayScrollBar);
         view.allDayScrollHeightProperty().addListener(il -> allDayScrollBar.setPrefHeight(Math.min(allDayViewScrollPane.getViewportHeight(), view.getAllDayScrollHeight())));
-
-
         allDayViewScrollPane.allDayScrollHeightProperty().bind(view.allDayScrollHeightProperty());
 
         // all day label

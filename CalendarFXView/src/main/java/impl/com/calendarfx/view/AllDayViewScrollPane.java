@@ -60,10 +60,6 @@ public class AllDayViewScrollPane extends Pane {
 
         this.scrollBar = scrollBar;
 
-        setStyle("-fx-background-color: red");
-
-        // this.scrollBar.prefHeightProperty().bind(heightProperty());
-
         this.allDayView = Objects.requireNonNull(allDayView);
         this.allDayView.setManaged(false);
         this.allDayView.layoutBoundsProperty().addListener(it -> requestLayout());
