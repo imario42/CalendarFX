@@ -592,41 +592,49 @@ public class AllDayViewSkin extends DateControlSkin<AllDayView> implements LoadD
 
         final InvalidationListener scroller = (observable) -> elementsPane.setTranslateY(allDayScrollBar.getValue() * -1);
 
+        if (this.allDayScrollBar.getParent() != null) {
+            bindScrollBar(allDayScrollBar, maxHeight, borderHeight, scroller);
+        }
         this.allDayScrollBar.parentProperty().addListener((observable, oldParent, newParent) -> {
             if (newParent != null) {
-                view.maxHeightProperty().bind(maxHeight);
-
-                allDayScrollBar.prefHeightProperty().bind(Bindings
-                        .when(Bindings.greaterThan(elementsPane.heightProperty(), view.heightProperty())).then(view.heightProperty()).otherwise(elementsPane.heightProperty()));
-
-                allDayScrollBar.maxProperty().bind(elementsPane.heightProperty().subtract(allDayScrollBar.heightProperty()));
-
-                allDayScrollBar.valueProperty().addListener(scroller);
-
-                Rectangle clipView = new Rectangle();
-                clipView.widthProperty().bind(stackPane.widthProperty());
-                clipView.heightProperty().bind(view.maxHeightProperty());
-                view.setClip(clipView);
-
-                Rectangle clipElements = new Rectangle();
-                clipElements.widthProperty().bind(stackPane.widthProperty());
-                clipElements.heightProperty().bind(view.maxHeightProperty().subtract(borderHeight));
-                scrollPane.setClip(clipElements);
-
-                this.allDayScrollBar.requestLayout();
+                bindScrollBar(allDayScrollBar, maxHeight, borderHeight, scroller);
             } else {
-                allDayScrollBar.prefHeightProperty().unbind();
-                allDayScrollBar.maxProperty().unbind();
-                allDayScrollBar.visibleAmountProperty().unbind();
-                allDayScrollBar.valueProperty().removeListener(scroller);
-                this.allDayScrollBar.setValue(0.0);
-                view.maxHeightProperty().unbind();
-                view.setMaxHeight(Double.MAX_VALUE);
-                scrollPane.setClip(null);
-                view.setClip(null);
-
-                this.allDayScrollBar.requestLayout();
+                unbindScrollBar(allDayScrollBar, scroller);
             }
+            this.allDayScrollBar.requestLayout();
         });
+    }
+
+    private void unbindScrollBar(ScrollBar allDayScrollBar, InvalidationListener scroller) {
+        allDayScrollBar.prefHeightProperty().unbind();
+        allDayScrollBar.maxProperty().unbind();
+        allDayScrollBar.visibleAmountProperty().unbind();
+        allDayScrollBar.valueProperty().removeListener(scroller);
+        this.allDayScrollBar.setValue(0.0);
+        view.maxHeightProperty().unbind();
+        view.setMaxHeight(Double.MAX_VALUE);
+        scrollPane.setClip(null);
+        view.setClip(null);
+    }
+
+    private void bindScrollBar(ScrollBar allDayScrollBar, DoubleProperty maxHeight, double borderHeight, InvalidationListener scroller) {
+        view.maxHeightProperty().bind(maxHeight);
+
+        allDayScrollBar.prefHeightProperty().bind(Bindings
+                .when(Bindings.greaterThan(elementsPane.heightProperty(), view.heightProperty())).then(view.heightProperty()).otherwise(elementsPane.heightProperty()));
+
+        allDayScrollBar.maxProperty().bind(elementsPane.heightProperty().subtract(allDayScrollBar.heightProperty()));
+
+        allDayScrollBar.valueProperty().addListener(scroller);
+
+        Rectangle clipView = new Rectangle();
+        clipView.widthProperty().bind(stackPane.widthProperty());
+        clipView.heightProperty().bind(view.maxHeightProperty());
+        view.setClip(clipView);
+
+        Rectangle clipElements = new Rectangle();
+        clipElements.widthProperty().bind(stackPane.widthProperty());
+        clipElements.heightProperty().bind(view.maxHeightProperty().subtract(borderHeight));
+        scrollPane.setClip(clipElements);
     }
 }
